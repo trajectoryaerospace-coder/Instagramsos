@@ -2,96 +2,214 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-  <title>Send Email</title>
+<title>Location Website</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<style>
+* {
+  box-sizing: border-box;
+}
 
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #101827;
-      font-family: Arial, sans-serif;
-    }
+body {
+  margin: 0;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background: #111;
+}
 
-    button {
-      padding: 20px 55px;
-      font-size: 20px;
-      color: white;
-      background: #2563eb;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
+#background {
+  position: fixed;
+  inset: 0;
+  background-image: url("background.jpg");
+  background-size: cover;
+  background-position: center;
+}
 
-    button:hover {
-      background: #1d4ed8;
-    }
+#consent {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  background: rgba(0,0,0,0.85);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+  text-align: center;
+}
 
-    button:disabled {
-      opacity: 0.5;
-      cursor: wait;
-    }
+#consent button {
+  padding: 15px 30px;
+  margin: 10px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 16px;
+}
 
-    #status {
-      position: absolute;
-      margin-top: 120px;
-      color: white;
-      font-size: 15px;
-    }
-  </style>
+#allow {
+  background: #2563eb;
+  color: white;
+}
+
+#decline {
+  background: #444;
+  color: white;
+}
+
+#top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  z-index: 2;
+  cursor: pointer;
+}
+
+#status {
+  position: absolute;
+  bottom: 30px;
+  width: 100%;
+  text-align: center;
+  color: white;
+  z-index: 3;
+  text-shadow: 0 1px 5px black;
+}
+</style>
 </head>
 
 <body>
 
-  <button id="sendBtn">SEND EMAIL</button>
-  <p id="status"></p>
+<div id="background"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@5/dist/email.min.js"></script>
+<div id="consent">
+  <h2>Location sharing</h2>
 
-  <script>
-    const SERVICE_ID = "service_m7tu3mv";
-    const TEMPLATE_ID = "template_xbjg8ir";
-    const PUBLIC_KEY = "rFNWrRO-NZBWQi9QH";
+  <p>
+    This website can share your precise device location
+    with trajectory.aerospace@gmail.com by email
+    when you tap the upper half of the screen.
+  </p>
 
-    emailjs.init({
-      publicKey: PUBLIC_KEY
-    });
+  <button id="allow">Agree and enable location</button>
+  <button id="decline">Decline</button>
+</div>
 
-    document.getElementById("sendBtn").addEventListener("click", async () => {
+<div id="top"></div>
+<div id="status">Waiting for permission</div>
 
-      const button = document.getElementById("sendBtn");
-      const status = document.getElementById("status");
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@5/dist/email.min.js"></script>
 
-      button.disabled = true;
-      status.textContent = "Sending...";
+<script>
+const SERVICE_ID = "service_m7tu3mv";
+const TEMPLATE_ID = "template_xbjg8ir";
+const PUBLIC_KEY = "rFNWrRO-NZBWQi9QH";
+
+emailjs.init({
+  publicKey: PUBLIC_KEY
+});
+
+let locationEnabled = false;
+let sending = false;
+
+const consent = document.getElementById("consent");
+const status = document.getElementById("status");
+const topArea = document.getElementById("top");
+
+document.getElementById("allow").addEventListener("click", () => {
+
+  if (!navigator.geolocation) {
+    status.textContent = "Location is not supported.";
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    () => {
+      locationEnabled = true;
+      consent.style.display = "none";
+      status.textContent = "Ready";
+    },
+    () => {
+      locationEnabled = false;
+      status.textContent = "Location permission was not granted.";
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 15000
+    }
+  );
+});
+
+document.getElementById("decline").addEventListener("click", () => {
+  consent.style.display = "none";
+  status.textContent = "Location sharing is disabled.";
+});
+
+topArea.addEventListener("click", async () => {
+
+  if (!locationEnabled || sending) return;
+
+  sending = true;
+  status.textContent = "Getting location...";
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
+
+      const mapsLink =
+        `https://www.google.com/maps?q=${latitude},${longitude}`;
 
       try {
+
         await emailjs.send(
           SERVICE_ID,
           TEMPLATE_ID,
-          {},
-          { publicKey: PUBLIC_KEY }
+          {
+            message: "hi",
+            latitude: latitude,
+            longitude: longitude,
+            accuracy: accuracy,
+            maps_link: mapsLink
+          }
         );
 
-        status.textContent = "Email sent successfully!";
+        status.textContent = "Sent successfully!";
+
       } catch (error) {
+
         console.error(error);
-        status.textContent = "Failed to send email. Check console.";
+        status.textContent = "Email failed to send.";
+
       }
 
-      button.disabled = false;
-    });
-  </script>
+      sending = false;
+
+    },
+
+    () => {
+      status.textContent = "Could not retrieve location.";
+      sending = false;
+    },
+
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 15000
+    }
+  );
+
+});
+</script>
 
 </body>
 </html>
