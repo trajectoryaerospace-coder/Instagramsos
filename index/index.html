@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Send Email</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #101827;
+      font-family: Arial, sans-serif;
+    }
+
+    button {
+      padding: 20px 55px;
+      font-size: 20px;
+      color: white;
+      background: #2563eb;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: wait;
+    }
+
+    #status {
+      position: absolute;
+      margin-top: 120px;
+      color: white;
+      font-size: 15px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <button id="sendBtn">SEND EMAIL</button>
+  <p id="status"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@5/dist/email.min.js"></script>
+
+  <script>
+    const SERVICE_ID = "service_m7tu3mv";
+    const TEMPLATE_ID = "template_xbjg8ir";
+    const PUBLIC_KEY = "rFNWrRO-NZBWQi9QH";
+
+    emailjs.init({
+      publicKey: PUBLIC_KEY
+    });
+
+    document.getElementById("sendBtn").addEventListener("click", async () => {
+
+      const button = document.getElementById("sendBtn");
+      const status = document.getElementById("status");
+
+      button.disabled = true;
+      status.textContent = "Sending...";
+
+      try {
+        await emailjs.send(
+          SERVICE_ID,
+          TEMPLATE_ID,
+          {},
+          { publicKey: PUBLIC_KEY }
+        );
+
+        status.textContent = "Email sent successfully!";
+      } catch (error) {
+        console.error(error);
+        status.textContent = "Failed to send email. Check console.";
+      }
+
+      button.disabled = false;
+    });
+  </script>
+
+</body>
+</html>
